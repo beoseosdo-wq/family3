@@ -23,6 +23,13 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 import qrcode
+import os
+# Apply a coherent light theme before Streamlit creates widgets.
+os.environ["STREAMLIT_THEME_BASE"] = "light"
+os.environ["STREAMLIT_THEME_BACKGROUND_COLOR"] = "#F3F5F9"
+os.environ["STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR"] = "#FFFFFF"
+os.environ["STREAMLIT_THEME_TEXT_COLOR"] = "#191F28"
+os.environ["STREAMLIT_THEME_PRIMARY_COLOR"] = "#2478F3"
 import streamlit as st
 
 SPORTS = ["걷기", "달리기", "줄넘기", "헬스", "요가", "자전거", "수영", "등산"]
@@ -307,6 +314,40 @@ def main():
     [data-testid="stExpander"]{border-radius:24px!important;}
     .stButton>button,.stFormSubmitButton>button{border-radius:22px!important;min-height:54px;}
     h1{letter-spacing:-0.8px;}h2,h3{letter-spacing:-0.4px;}
+
+    /* Target widget test IDs, including Streamlit versions without BaseWeb wrappers. */
+    [data-testid="stDateInput"] div,
+    [data-testid="stDateInput"] input,
+    [data-testid="stSelectbox"] [role="combobox"],
+    [data-testid="stSelectbox"] [data-baseweb="select"] div,
+    [data-testid="stNumberInput"] [data-baseweb="input"] div,
+    [data-testid="stTextInput"] [data-baseweb="input"] div {
+      background-color:#FFFFFF!important;color:#191F28!important;
+      -webkit-text-fill-color:#191F28!important;border-color:#E3E9F1!important;
+    }
+    [data-testid="stDateInput"] input,
+    [data-testid="stSelectbox"] input {color:#191F28!important;-webkit-text-fill-color:#191F28!important;}
+    [data-testid="stDateInput"] svg,[data-testid="stSelectbox"] svg {color:#526174!important;fill:currentColor!important;}
+    [data-testid="stDateInput"] [data-baseweb="input"],
+    [data-testid="stSelectbox"] [data-baseweb="select"]>div {
+      min-height:54px;border:1px solid #E3E9F1!important;border-radius:16px!important;
+      background:#FFFFFF!important;box-shadow:none!important;
+    }
+    [data-testid="stAlert"],[data-testid="stAlert"] div,
+    [data-testid="stAlert"] [data-baseweb="notification"] {
+      background:#FFFFFF!important;color:#191F28!important;
+      border-color:#FFFFFF!important;box-shadow:none!important;
+    }
+    [data-testid="stAlert"] p,[data-testid="stAlert"] span {color:#191F28!important;-webkit-text-fill-color:#191F28!important;}
+    [data-testid="stTooltipContent"],[data-testid="stTooltipContent"] *,
+    [role="tooltip"],[role="tooltip"] * {
+      background:#FFFFFF!important;color:#191F28!important;-webkit-text-fill-color:#191F28!important;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"]>div,
+    [data-testid="stContainer"] {border-radius:24px;}
+    .stApp {background:#F3F5F9!important;}
+    [data-testid="stMainBlockContainer"]{padding-left:20px;padding-right:20px;}
+    h2,h3{margin-top:12px!important;}
     </style>""", unsafe_allow_html=True)
     if not st.session_state.get("intro_seen", False):
         # st.html avoids Markdown interpreting indented HTML as a code block.
@@ -620,8 +661,10 @@ def main():
                 st.dataframe(stats,use_container_width=True)
             st.subheader("📸 가족 운동 앨범")
             st.caption("사진은 가족 모두에게 보여요.")
-            album_day=st.date_input("날짜",value=today,max_value=today,key="family_album_day")
-            who=st.selectbox("가족",["전체 가족"]+list(members),key="family_album_member")
+            with st.container(border=True):
+                st.markdown("#### 가족의 오늘")
+                album_day=st.date_input("날짜",value=today,max_value=today,key="family_album_day")
+                who=st.selectbox("가족",["전체 가족"]+list(members),key="family_album_member")
             shared=records[records.day==str(album_day)]
             if who!="전체 가족":
                 shared=shared[shared.member==who]
