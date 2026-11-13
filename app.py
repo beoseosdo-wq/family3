@@ -390,6 +390,26 @@ def main():
     [data-baseweb="select"] svg {fill:#526174!important;}
     [data-testid="stForm"]{border-color:#E3E9F1!important;}
     [data-testid="stExpander"] summary{border-radius:16px!important;}
+
+    /* Reference-inspired training log: white canvas, compact rows, blue accents. */
+    .stApp,[data-testid="stHeader"]{background:#FFFFFF!important;}
+    .block-container{max-width:560px;padding-bottom:32px;}
+    h1{font-size:1.35rem!important;letter-spacing:-.5px;}
+    h2{font-size:1.2rem!important;} h3{font-size:1.05rem!important;}
+    [data-testid="stMetric"]{background:#F4F6F8!important;border-radius:10px!important;padding:16px!important;}
+    [data-testid="stMetricLabel"] p{font-size:12px!important;color:#697586!important;}
+    [data-testid="stMetricValue"]{font-size:1.9rem!important;font-weight:700;}
+    .stButton>button,.stFormSubmitButton>button{border-radius:10px!important;min-height:48px!important;box-shadow:none!important;}
+    [data-testid="stVerticalBlockBorderWrapper"]>div{border-radius:12px!important;box-shadow:none!important;}
+    [data-testid="stExpander"]{border-radius:10px!important;}
+    .training-head{padding:12px 0 16px;border-bottom:1px solid #E8EDF3;margin-bottom:18px;}
+    .training-eyebrow{color:#2478F3;font-size:11px;font-weight:750;letter-spacing:1.8px;margin-bottom:5px;}
+    .training-title{font-size:27px;font-weight:780;color:#18212F;letter-spacing:-1px;}
+    .training-caption{font-size:13px;color:#778392;margin-top:5px;}
+    .training-section{font-size:15px;font-weight:700;color:#2478F3;padding:18px 0 10px;}
+    .training-row{display:flex;justify-content:space-between;align-items:center;padding:13px 12px;border-bottom:1px solid #E8EDF3;background:#F7F9FC;color:#191F28;}
+    .training-row:nth-child(even){background:#FFFFFF;}
+    .training-row small{color:#697586;}
     </style>""", unsafe_allow_html=True)
     if not st.session_state.get("intro_seen", False):
         # st.html avoids Markdown interpreting indented HTML as a code block.
@@ -481,19 +501,38 @@ def main():
             if col.button(icon,key="nav_"+label,help=label,use_container_width=True,type="primary" if page==label else "secondary"):
                 go(label)
     if page=="홈":
-        st.subheader(f"{me}님, 오늘도 가볍게 💪")
+        import html
+        st.html('<div class="training-head"><div class="training-eyebrow">FAMILY TRAINING</div><div class="training-title">오늘의 운동</div><div class="training-caption">'+html.escape(str(me))+' · '+today.strftime('%Y.%m.%d')+'</div></div>')
         today_records=mine[mine.day==str(today)]
+        week=mine[(mine.day>=str(today-timedelta(days=6))) & (mine.day<=str(today))]
         a,b=st.columns(2)
-        a.metric("오늘 운동",f"{int(today_records.minutes.sum())}분")
-        b.metric("누적 운동",f"{len(mine)}회")
-        st.write("")
+        a.metric("오늘 운동 시간",f"{int(today_records.minutes.sum())}분")
+        b.metric("최근 7일 기록",f"{len(week)}회")
+        st.html('<div class="training-section">활동 추이 · 최근 7일</div>')
+        days=pd.date_range(today-timedelta(days=6),today)
+        trend=week.groupby("day").minutes.sum().reindex(days.strftime("%Y-%m-%d"),fill_value=0)
+        trend.index=days
+        if len(week):
+            st.line_chart(trend.rename("운동 시간 · 분"),color="#2478F3",height=180,use_container_width=True)
+        else:
+            st.caption("첫 운동을 기록하면 여기에 주간 그래프가 생겨요.")
         actions=st.columns(2)
-        if actions[0].button("＋ 운동 기록",type="primary",use_container_width=True):
+        if actions[0].button("＋ 운동 시작",type="primary",use_container_width=True):
             st.session_state.draft={}
             st.session_state.draft_token=str(uuid4())
             go("운동선택")
-        if actions[1].button("📅 지난 기록",use_container_width=True):
+        if actions[1].button("지난 기록",use_container_width=True):
             go("달력")
+        st.html('<div class="training-section">오늘의 운동 로그</div>')
+        if today_records.empty:
+            st.caption("아직 기록이 없어요. 운동을 마친 뒤 첫 기록을 남겨보세요.")
+        else:
+            rows=[]
+            for _,r in today_records.tail(4).iterrows():
+                rows.append('<div class="training-row"><div><strong>'+html.escape(str(r.sport))+'</strong><br><small>'+html.escape(str(r.category))+'</small></div><strong>'+str(int(r.minutes))+' 분</strong></div>')
+            st.html(''.join(rows))
+            if len(today_records)>4:
+                st.caption("나머지 기록은 지난 기록에서 확인하세요.")
     elif page=="운동선택":
         st.caption("1 / 3")
         st.subheader("어떤 운동을 했나요?")
@@ -557,16 +596,56 @@ def main():
         if st.button("← 시간 수정"):
             go("시간입력")
     elif page=="완료":
-        st.subheader("✅ 오늘의 움직임, 저장 완료!")
+        st.subheader("🎉 오늘도 수고했어요!")
+        st.caption("운동 기록과 사진을 저장했어요. 잠시 쉬면서 회복해요.")
         st.write(st.session_state.get("saved_summary",""))
         if st.button("홈으로",type="primary"):
             go("홈")
         if st.button("방금 기록 보기"):
             st.session_state.calendar_day=st.session_state.get("saved_day",today)
+            st.session_state.calendar_month=st.session_state.calendar_day.replace(day=1)
             go("달력")
     elif page=="달력":
-        st.subheader("📅 운동 달력")
-        selected=st.date_input("보고 싶은 날짜",key="calendar_day",value=today,max_value=today)
+        import calendar
+        st.subheader("운동 달력")
+        selected=st.session_state.get("calendar_day",today)
+        if not isinstance(selected,date):
+            selected=today
+        month=st.session_state.get("calendar_month",selected.replace(day=1))
+        controls=st.columns([1,4,1])
+        if controls[0].button("‹",key="month_prev",help="이전 달",use_container_width=True):
+            st.session_state.calendar_month=(month-timedelta(days=1)).replace(day=1)
+            st.rerun()
+        controls[1].markdown(f"<div style='text-align:center;font-size:21px;font-weight:700;color:#191F28'>{month.year}년 {month.month}월</div>",unsafe_allow_html=True)
+        if controls[2].button("›",key="month_next",help="다음 달",use_container_width=True):
+            st.session_state.calendar_month=(month.replace(day=28)+timedelta(days=4)).replace(day=1)
+            st.rerun()
+        if st.button("오늘",key="calendar_today"):
+            st.session_state.calendar_day=today
+            st.session_state.calendar_month=today.replace(day=1)
+            st.rerun()
+        marked=set(mine.day.tolist())
+        headers=st.columns(7,gap="small")
+        for column,label in zip(headers,["일","월","화","수","목","금","토"]):
+            column.markdown(f"<div style='text-align:center;font-size:12px;color:#697586'>{label}</div>",unsafe_allow_html=True)
+        st.html("""<style>
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(7)){flex-wrap:nowrap!important;gap:3px!important;}
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(7)) > [data-testid="stColumn"]{min-width:0!important;flex:1 1 0!important;width:calc(100% / 7)!important;}
+        [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"]:nth-child(7)) button{padding:3px!important;min-height:42px!important;border-radius:8px!important;}
+        </style>""")
+        for week in calendar.Calendar(firstweekday=6).monthdayscalendar(month.year,month.month):
+            columns=st.columns(7,gap="small")
+            for column,num in zip(columns,week):
+                if not num:
+                    column.write("")
+                    continue
+                day=date(month.year,month.month,num)
+                label=str(num)+(" ·" if str(day) in marked else "")
+                if column.button(label,key=f"day_{day}",type="primary" if day==selected else "secondary",use_container_width=True,help=f"{day} 운동 기록",disabled=day>today):
+                    st.session_state.calendar_day=day
+                    st.rerun()
+        st.caption("· 운동한 날")
+        st.divider()
         daily=mine[mine.day==str(selected)]
         st.caption(f"{selected:%Y.%m.%d} · {len(daily)}회 · {int(daily.minutes.sum())}분")
         if daily.empty:
@@ -579,7 +658,7 @@ def main():
             with connect_db(db) as conn:
                 image=conn.execute("SELECT photo FROM workouts WHERE id=? AND member=?",(rid,me)).fetchone()
             if image and image[0]:
-                st.image(image[0],width=240)
+                st.image(image[0],use_container_width=True)
             else:
                 st.caption("인증사진 없음 · 이전 기록")
             if st.button("수정 · 삭제"):
