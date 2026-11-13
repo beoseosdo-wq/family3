@@ -348,6 +348,48 @@ def main():
     .stApp {background:#F3F5F9!important;}
     [data-testid="stMainBlockContainer"]{padding-left:20px;padding-right:20px;}
     h2,h3{margin-top:12px!important;}
+
+    /* Cover native Streamlit wrappers AND BaseWeb child surfaces. */
+    [data-testid="stExpander"] details,
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary:hover,
+    [data-testid="stExpanderDetails"],
+    [data-testid="stForm"],
+    [data-testid="stTextInputRootElement"],
+    [data-testid="stNumberInputContainer"],
+    [data-testid="stDateInputField"],
+    [data-testid="stTextAreaRootElement"],
+    [data-testid="stChatInput"],
+    [data-testid="stChatInput"]>div,
+    [data-baseweb="input"], [data-baseweb="base-input"],
+    [data-baseweb="input"] *, [data-baseweb="base-input"] *,
+    [data-baseweb="select"]>div, [data-baseweb="select"]>div *,
+    [data-baseweb="textarea"], [data-baseweb="textarea"] *,
+    [data-testid="stNumberInput"] button,
+    [data-testid="stFileUploaderDropzone"],
+    [data-testid="stFileUploaderDropzone"] *,
+    [data-testid="stPopover"] button {
+        background-color:#FFFFFF!important;
+        color:#191F28!important;
+        -webkit-text-fill-color:#191F28!important;
+        border-color:#E3E9F1!important;
+        box-shadow:none!important;
+    }
+    [data-testid="stExpander"] summary p,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] summary svg {
+        color:#191F28!important;-webkit-text-fill-color:#191F28!important;
+    }
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stDateInput"] input,
+    [data-testid="stChatInput"] textarea {
+        background:#FFFFFF!important;color:#191F28!important;
+        -webkit-text-fill-color:#191F28!important;caret-color:#191F28!important;
+    }
+    [data-baseweb="select"] svg {fill:#526174!important;}
+    [data-testid="stForm"]{border-color:#E3E9F1!important;}
+    [data-testid="stExpander"] summary{border-radius:16px!important;}
     </style>""", unsafe_allow_html=True)
     if not st.session_state.get("intro_seen", False):
         # st.html avoids Markdown interpreting indented HTML as a code block.
@@ -462,15 +504,15 @@ def main():
                 if cols[j].button(icons[i+j]+" "+sport,key="sport_"+sport):
                     st.session_state.draft={"sport":sport,"category":GUIDES[sport][0]}
                     go("시간입력")
-        with st.expander("＋ 다른 운동"):
-            with st.form("custom"):
-                sport=st.text_input("운동 이름",max_chars=40)
-                cat=st.selectbox("운동 유형",CATS)
-                if st.form_submit_button("다음"):
-                    if sport.strip():
-                        st.session_state.draft={"sport":sport.strip(),"category":cat}
-                        go("시간입력")
-                    st.error("운동 이름을 입력해주세요.")
+        st.markdown("#### 다른 운동 직접 입력")
+        with st.form("custom",border=False):
+            sport=st.text_input("운동 이름",placeholder="예: 배드민턴, 필라테스",max_chars=40)
+            cat=st.selectbox("운동 유형",CATS)
+            if st.form_submit_button("다음",type="primary",use_container_width=True):
+                if sport.strip():
+                    st.session_state.draft={"sport":sport.strip(),"category":cat}
+                    go("시간입력")
+                st.error("운동 이름을 입력해주세요.")
         if st.button("취소"):
             go("홈")
     elif page=="시간입력":
